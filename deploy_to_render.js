@@ -107,7 +107,7 @@ async function getPostgresConnectionInfo(dbId) {
   // Extract host, user, password, database from internalConnectionString
   // Format: postgresql://user:password@internal-host:5432/dbname
   const url = res.internalConnectionString;
-  const matches = url.match(/postgresql:\/\/([^:]+):([^@]+)@([^:]+):5432\/(.+)/);
+  const matches = url.match(/postgresql:\/\/([^:]+):([^@]+)@([^:/]+)(?::\d+)?\/(.+)/);
   if (!matches) {
     throw new Error(`Failed to parse internal connection string: ${url}`);
   }
