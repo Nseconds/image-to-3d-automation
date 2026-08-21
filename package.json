@@ -1,0 +1,18 @@
+{
+  "name": "image-to-3d-automation-service",
+  "version": "1.0.0",
+  "description": "Headless-browser automation service that drives the image-to-3d.ai playground and returns the generated GLB file, for use as a node in the Idea-to-3D-Asset n8n pipeline.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "puppeteer": "^23.5.0"
+  }
+}
