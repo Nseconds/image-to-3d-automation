@@ -19,7 +19,7 @@ if (fs.existsSync(envPath)) {
 const token = process.env.RENDER_API_KEY;
 const ownerId = "tea-d9p3jgfavr4c73aift00";
 const environmentId = "evm-da4216gjo6nc73dg6igg";
-const repoUrl = "https://github.com/Nseconds/image-to-3d-automation.git";
+const repoUrl = "https://github.com/Nseconds/image-to-3d-automation";
 const branchName = "main";
 const openRouterKey = process.env.OPENROUTER_API_KEY;
 const geminiKey = process.env.GEMINI_API_KEY;
