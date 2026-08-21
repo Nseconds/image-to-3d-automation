@@ -1,10 +1,41 @@
-const token = "rnd_ZCqddIlo66wW8lpXms5RRO3Y9ZjT";
+// Load local .env file if it exists
+const fs = require('fs');
+const path = require('path');
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  const envConfig = fs.readFileSync(envPath, 'utf8');
+  envConfig.split('\n').forEach(line => {
+    const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+    if (match) {
+      const key = match[1];
+      let value = match[2] || '';
+      if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
+      if (value.startsWith("'") && value.endsWith("'")) value = value.slice(1, -1);
+      process.env[key] = value.trim();
+    }
+  });
+}
+
+const token = process.env.RENDER_API_KEY;
 const ownerId = "tea-d9p3jgfavr4c73aift00";
 const environmentId = "evm-da4216gjo6nc73dg6igg";
 const repoUrl = "https://github.com/Nseconds/image-to-3d-automation.git";
 const branchName = "main";
-const openRouterKey = "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";
-const geminiKey = "AQ.Ab8RN6LMN_EEhc4TndNaXzeWzJP7hskCO7XpUT_ON9ff3GpUDQ";
+const openRouterKey = process.env.OPENROUTER_API_KEY;
+const geminiKey = process.env.GEMINI_API_KEY;
+
+if (!token) {
+  console.error("Error: RENDER_API_KEY is not set. Please set it in a local .env file or environment variables.");
+  process.exit(1);
+}
+if (!openRouterKey) {
+  console.error("Error: OPENROUTER_API_KEY is not set. Please set it in a local .env file or environment variables.");
+  process.exit(1);
+}
+if (!geminiKey) {
+  console.error("Error: GEMINI_API_KEY is not set. Please set it in a local .env file or environment variables.");
+  process.exit(1);
+}
 
 const headers = {
   "Authorization": `Bearer ${token}`,
