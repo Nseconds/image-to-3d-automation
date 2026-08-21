@@ -80,8 +80,8 @@ async function getOrCreatePostgres() {
   };
   
   const res = await request("https://api.render.com/v1/postgres", "POST", payload);
-  console.log(`Triggered creation of database with ID: ${res.id}`);
-  return res;
+  console.log(`Triggered creation of database with ID: ${res.postgres.id}`);
+  return res.postgres;
 }
 
 async function waitForPostgresActive(dbId) {
@@ -149,8 +149,8 @@ async function createWebService(name, context, dockerfile, envVars = []) {
   };
   
   const res = await request("https://api.render.com/v1/services", "POST", payload);
-  console.log(`Created service ${name} with ID: ${res.id}`);
-  return res;
+  console.log(`Created service ${name} with ID: ${res.service.id}`);
+  return res.service;
 }
 
 async function createImageWebService(name, imagePath, envVars = []) {
@@ -181,8 +181,8 @@ async function createImageWebService(name, imagePath, envVars = []) {
   };
   
   const res = await request("https://api.render.com/v1/services", "POST", payload);
-  console.log(`Created image service ${name} with ID: ${res.id}`);
-  return res;
+  console.log(`Created image service ${name} with ID: ${res.service.id}`);
+  return res.service;
 }
 
 async function main() {
