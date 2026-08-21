@@ -44,7 +44,8 @@ async function getOrCreatePostgres() {
     ownerId,
     environmentId,
     plan: "free",
-    region: "oregon"
+    region: "oregon",
+    version: "15"
   };
   
   const res = await request("https://api.render.com/v1/postgres", "POST", payload);
@@ -57,7 +58,7 @@ async function waitForPostgresActive(dbId) {
   while (true) {
     const res = await request(`https://api.render.com/v1/postgres/${dbId}`);
     console.log(`Database status: ${res.status}`);
-    if (res.status === "active") {
+    if (res.status === "available" || res.status === "active") {
       break;
     }
     if (res.status === "failed") {
