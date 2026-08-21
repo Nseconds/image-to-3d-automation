@@ -1,0 +1,894 @@
+{
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"workflow\":{\"id\":\"v40HjsznStaPF63j\",\"name\":\"Idea to 3D Asset Pipeline\",\"active\":false,\"isArchived\":false,\"versionId\":\"fe5ec487-3b37-4e8e-b5ab-da424f0f690b\",\"activeVersionId\":null,\"triggerCount\":0,\"nodeCount\":26,\"createdAt\":\"2026-08-21T06:42:05.855Z\",\"updatedAt\":\"2026-08-21T09:25:07.145Z\",\"settings\":{\"executionOrder\":\"v1\",\"availableInMCP\":true,\"binaryMode\":\"separate\"},\"tags\":[],\"parentFolderId\":null,\"description\":\"Turns a natural-language idea into a rendered 3D asset in a mobile app: OpenRouter free-model prompt refinement → Gemini image gen → remove.bg crop/isolate → Meshy image-to-3D → GitHub commit of .glb + generated RN/R3F viewer component.\",\"scopes\":[\"execution:reveal\",\"workflow:create\",\"workflow:delete\",\"workflow:disableRedaction\",\"workflow:enableRedaction\",\"workflow:execute\",\"workflow:execute-chat\",\"workflow:export\",\"workflow:import\",\"workflow:list\",\"workflow:move\",\"workflow:publish\",\"workflow:read\",\"workflow:share\",\"workflow:unpublish\",\"workflow:unshare\",\"workflow:update\"],\"canExecute\":true,\"connections\":{\"Idea Intake Webhook\":{\"main\":[[{\"node\":\"Valid Idea Provided?\",\"type\":\"main\",\"index\":0}]]},\"Valid Idea Provided?\":{\"main\":[[{\"node\":\"Refine Prompt (OpenRouter)\",\"type\":\"main\",\"index\":0}],[{\"node\":\"Respond 400\",\"type\":\"main\",\"index\":0}]]},\"Refine Prompt (OpenRouter)\":{\"main\":[[{\"node\":\"Extract Refined Prompt\",\"type\":\"main\",\"index\":0}],[{\"node\":\"Format Pipeline Error\",\"type\":\"main\",\"index\":0}]]},\"Extract Refined Prompt\":{\"main\":[[{\"node\":\"Generate Image (Gemini)\",\"type\":\"main\",\"index\":0}]]},\"Generate Image (Gemini)\":{\"main\":[[{\"node\":\"Decode Image to Binary\",\"type\":\"main\",\"index\":0}],[{\"node\":\"Format Pipeline Error\",\"type\":\"main\",\"index\":0}]]},\"Decode Image to Binary\":{\"main\":[[{\"node\":\"Isolate & Crop Subject (remove.bg)\",\"type\":\"main\",\"index\":0}]]},\"Isolate & Crop Subject (remove.bg)\":{\"main\":[[{\"node\":\"Prepare Data URI for 3D API\",\"type\":\"main\",\"index\":0}],[{\"node\":\"Format Pipeline Error\",\"type\":\"main\",\"index\":0}]]},\"Prepare Data URI for 3D API\":{\"main\":[[{\"node\":\"Convert 2D→3D (Meshy Image-to-3D)\",\"type\":\"main\",\"index\":0}]]},\"Convert 2D→3D (Meshy Image-to-3D)\":{\"main\":[[{\"node\":\"Wait for Mesh Generation\",\"type\":\"main\",\"index\":0}],[{\"node\":\"Format Pipeline Error\",\"type\":\"main\",\"index\":0}]]},\"Wait for Mesh Generation\":{\"main\":[[{\"node\":\"Check 3D Task Status\",\"type\":\"main\",\"index\":0}]]},\"Check 3D Task Status\":{\"main\":[[{\"node\":\"Mesh Succeeded?\",\"type\":\"main\",\"index\":0}],[{\"node\":\"Format Pipeline Error\",\"type\":\"main\",\"index\":0}]]},\"Mesh Succeeded?\":{\"main\":[[{\"node\":\"Download .glb Model\",\"type\":\"main\",\"index\":0}],[{\"node\":\"Flag Mesh Not Ready\",\"type\":\"main\",\"index\":0}]]},\"Download .glb Model\":{\"main\":[[{\"node\":\"Generate RN Viewer Component\",\"type\":\"main\",\"index\":0}],[{\"node\":\"Format Pipeline Error\",\"type\":\"main\",\"index\":0}]]},\"Generate RN Viewer Component\":{\"main\":[[{\"node\":\"Commit .glb to Repo\",\"type\":\"main\",\"index\":0}]]},\"Commit .glb to Repo\":{\"main\":[[{\"node\":\"Commit Viewer Component to Repo\",\"type\":\"main\",\"index\":0}]]},\"Commit Viewer Component to Repo\":{\"main\":[[{\"node\":\"Respond Success\",\"type\":\"main\",\"index\":0}]]},\"Flag Mesh Not Ready\":{\"main\":[[{\"node\":\"Format Pipeline Error\",\"type\":\"main\",\"index\":0}]]},\"Format Pipeline Error\":{\"main\":[[{\"node\":\"Respond 502 Error\",\"type\":\"main\",\"index\":0}]]}},\"nodes\":[{\"parameters\":{\"httpMethod\":\"POST\",\"path\":\"generate-3d-asset\",\"responseMode\":\"responseNode\",\"options\":{}},\"id\":\"a235ac27-2a87-4ff1-8a6b-aeae29310763\",\"name\":\"Idea Intake Webhook\",\"type\":\"n8n-nodes-base.webhook\",\"typeVersion\":2.1,\"position\":[0,608],\"webhookId\":\"d5b9dd6d-6bfb-46c5-8597-733acec4d9dc\"},{\"parameters\":{\"conditions\":{\"options\":{\"caseSensitive\":true,\"leftValue\":\"\",\"typeValidation\":\"loose\",\"version\":1},\"conditions\":[{\"leftValue\":\"={{ $json.body.idea }}\",\"operator\":{\"type\":\"string\",\"operation\":\"notEmpty\"}}],\"combinator\":\"and\"},\"options\":{}},\"id\":\"fa60a6a0-bbad-4d32-beb7-ef95211328e8\",\"name\":\"Valid Idea Provided?\",\"type\":\"n8n-nodes-base.if\",\"typeVersion\":2.2,\"position\":[224,608]},{\"parameters\":{\"method\":\"POST\",\"url\":\"https://openrouter.ai/api/v1/chat/completions\",\"sendHeaders\":true,\"headerParameters\":{\"parameters\":[{\"name\":\"Content-Type\",\"value\":\"application/json\"},{\"name\":\"HTTP-Referer\",\"value\":\"https://your-app.example.com\"},{\"name\":\"X-Title\",\"value\":\"AI 3D Asset Pipeline\"}]},\"sendBody\":true,\"specifyBody\":\"json\",\"jsonBody\":\"={{ JSON.stringify({ model: \\\"meta-llama/llama-3.3-70b-instruct:free\\\", messages: [ { role: \\\"system\\\", content: \\\"You are an expert prompt engineer for text-to-image models. Turn the user idea into a single, highly detailed image generation prompt describing ONE isolated 3D-game-ready asset, centered, on a plain solid white or transparent background, studio lighting, front-facing orthographic-friendly view, no shadows on ground, no extra objects, no text or watermarks, high detail suitable for photogrammetry/image-to-3D conversion. Respond with ONLY the final prompt text, nothing else.\\\" }, { role: \\\"user\\\", content: $json.body.idea } ], temperature: 0.7 }) }}\",\"options\":{\"timeout\":30000}},\"id\":\"f092d271-eadd-438f-8f78-22aca9c4fc94\",\"name\":\"Refine Prompt (OpenRouter)\",\"type\":\"n8n-nodes-base.httpRequest\",\"typeVersion\":4.4,\"position\":[448,512],\"retryOnFail\":true,\"maxTries\":3,\"onError\":\"continueErrorOutput\"},{\"parameters\":{\"mode\":\"runOnceForEachItem\",\"jsCode\":\"\\nconst choice = $input.item.json.choices && $input.item.json.choices[0];\\nif (!choice || !choice.message || !choice.message.content) {\\n  throw new Error('OpenRouter did not return a usable completion: ' + JSON.stringify($input.item.json));\\n}\\nconst requestBody = $('Idea Intake Webhook').item.json.body;\\nreturn { json: {\\n  refinedPrompt: choice.message.content.trim(),\\n  originalIdea: requestBody.idea,\\n  requestId: requestBody.requestId || (Date.now() + '-' + Math.random().toString(36).slice(2)),\\n  githubOwner: requestBody.githubOwner,\\n  githubRepo: requestBody.githubRepo,\\n  githubBranch: requestBody.githubBranch || 'main',\\n  assetSlug: (requestBody.idea || 'asset').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40) || 'asset'\\n} };\\n\"},\"id\":\"33028b7c-402f-4b38-8765-1d0fc4498044\",\"name\":\"Extract Refined Prompt\",\"type\":\"n8n-nodes-base.code\",\"typeVersion\":2,\"position\":[672,432]},{\"parameters\":{\"method\":\"POST\",\"url\":\"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent\",\"sendHeaders\":true,\"headerParameters\":{\"parameters\":[{\"name\":\"Content-Type\",\"value\":\"application/json\"}]},\"sendBody\":true,\"specifyBody\":\"json\",\"jsonBody\":\"={{ JSON.stringify({ contents: [ { parts: [ { text: $json.refinedPrompt } ] } ], generationConfig: { responseModalities: [\\\"IMAGE\\\"] } }) }}\",\"options\":{\"timeout\":60000}},\"id\":\"eaebe398-7dc1-484c-bd09-79e8ff487827\",\"name\":\"Generate Image (Gemini)\",\"type\":\"n8n-nodes-base.httpRequest\",\"typeVersion\":4.4,\"position\":[896,432],\"retryOnFail\":true,\"maxTries\":3,\"onError\":\"continueErrorOutput\"},{\"parameters\":{\"mode\":\"runOnceForEachItem\",\"jsCode\":\"\\nconst candidate = $input.item.json.candidates && $input.item.json.candidates[0];\\nconst part = candidate && candidate.content && candidate.content.parts && candidate.content.parts.find(p => p.inlineData);\\nif (!part) {\\n  throw new Error('Gemini response did not contain image data: ' + JSON.stringify($input.item.json).slice(0, 500));\\n}\\nconst b64 = part.inlineData.data;\\nconst mime = part.inlineData.mimeType || 'image/png';\\nconst buffer = Buffer.from(b64, 'base64');\\nconst binary = await this.helpers.prepareBinaryData(buffer, 'raw_asset.png', mime);\\nreturn { json: $input.item.json, binary: { data: binary } };\\n\"},\"id\":\"8cacbb50-5ba6-49dd-b470-fb5e2a688c41\",\"name\":\"Decode Image to Binary\",\"type\":\"n8n-nodes-base.code\",\"typeVersion\":2,\"position\":[1120,368]},{\"parameters\":{\"method\":\"POST\",\"url\":\"https://api.remove.bg/v1.0/removebg\",\"sendHeaders\":true,\"headerParameters\":{\"parameters\":[{}]},\"sendBody\":true,\"contentType\":\"multipart-form-data\",\"bodyParameters\":{\"parameters\":[{\"parameterType\":\"formBinaryData\",\"name\":\"image_file\",\"inputDataFieldName\":\"data\"},{\"name\":\"size\",\"value\":\"auto\"},{\"name\":\"crop\",\"value\":\"true\"},{\"name\":\"crop_margin\",\"value\":\"5%\"},{\"name\":\"format\",\"value\":\"png\"}]},\"options\":{\"response\":{\"response\":{\"responseFormat\":\"file\"}},\"timeout\":60000}},\"id\":\"617a8905-c9a2-46d7-b20f-fa018e44791b\",\"name\":\"Isolate & Crop Subject (remove.bg)\",\"type\":\"n8n-nodes-base.httpRequest\",\"typeVersion\":4.4,\"position\":[1344,368],\"retryOnFail\":true,\"maxTries\":2,\"onError\":\"continueErrorOutput\"},{\"parameters\":{\"mode\":\"runOnceForEachItem\",\"jsCode\":\"\\nconst binary = $input.item.binary.data;\\nconst buffer = await this.helpers.getBinaryDataBuffer(0, 'data');\\nconst dataUri = 'data:' + binary.mimeType + ';base64,' + buffer.toString('base64');\\nreturn { json: { ...$('Extract Refined Prompt').item.json, imageDataUri: dataUri }, binary: $input.item.binary };\\n\"},\"id\":\"d5d2cfd2-994e-4412-a868-d75ed577774d\",\"name\":\"Prepare Data URI for 3D API\",\"type\":\"n8n-nodes-base.code\",\"typeVersion\":2,\"position\":[1568,288]},{\"parameters\":{\"method\":\"POST\",\"url\":\"https://api.meshy.ai/openapi/v1/image-to-3d\",\"sendHeaders\":true,\"headerParameters\":{\"parameters\":[{\"name\":\"Content-Type\",\"value\":\"application/json\"}]},\"sendBody\":true,\"specifyBody\":\"json\",\"jsonBody\":\"={{ JSON.stringify({ image_url: $json.imageDataUri, enable_pbr: true, should_remesh: true, ai_model: \\\"meshy-5\\\" }) }}\",\"options\":{\"timeout\":60000}},\"id\":\"cef3fd05-4e4b-4539-947f-c82dcf725b18\",\"name\":\"Convert 2D→3D (Meshy Image-to-3D)\",\"type\":\"n8n-nodes-base.httpRequest\",\"typeVersion\":4.4,\"position\":[1792,288],\"retryOnFail\":true,\"maxTries\":2,\"onError\":\"continueErrorOutput\"},{\"parameters\":{\"amount\":25},\"id\":\"a0c46035-34b5-4327-8caf-e952ce3a44ac\",\"name\":\"Wait for Mesh Generation\",\"type\":\"n8n-nodes-base.wait\",\"typeVersion\":1.1,\"position\":[2016,224],\"webhookId\":\"0e0284ba-0f3c-4755-85b8-6e0dd8b1b53f\"},{\"parameters\":{\"url\":\"={{ \\\"https://api.meshy.ai/openapi/v1/image-to-3d/\\\" + $(\\\"Convert 2D→3D (Meshy Image-to-3D)\\\").item.json.result }}\",\"sendHeaders\":true,\"headerParameters\":{\"parameters\":[{}]},\"options\":{\"timeout\":30000}},\"id\":\"cdea0800-4f8a-4def-a1ae-62cc7facc766\",\"name\":\"Check 3D Task Status\",\"type\":\"n8n-nodes-base.httpRequest\",\"typeVersion\":4.4,\"position\":[2240,224],\"retryOnFail\":true,\"maxTries\":3,\"onError\":\"continueErrorOutput\"},{\"parameters\":{\"conditions\":{\"options\":{\"caseSensitive\":true,\"leftValue\":\"\",\"typeValidation\":\"strict\",\"version\":1},\"conditions\":[{\"leftValue\":\"={{ $json.status }}\",\"operator\":{\"type\":\"string\",\"operation\":\"equals\"},\"rightValue\":\"SUCCEEDED\"}],\"combinator\":\"and\"},\"options\":{}},\"id\":\"86fdf9b0-171f-4f92-85e0-99313d399bf2\",\"name\":\"Mesh Succeeded?\",\"type\":\"n8n-nodes-base.if\",\"typeVersion\":2.2,\"position\":[2464,144]},{\"parameters\":{\"url\":\"={{ $json.model_urls.glb }}\",\"options\":{\"response\":{\"response\":{\"responseFormat\":\"file\"}},\"timeout\":60000}},\"id\":\"b83fa186-e2ca-4024-81b1-f32fbb8f8aa7\",\"name\":\"Download .glb Model\",\"type\":\"n8n-nodes-base.httpRequest\",\"typeVersion\":4.4,\"position\":[2688,48],\"retryOnFail\":true,\"maxTries\":3,\"onError\":\"continueErrorOutput\"},{\"parameters\":{\"mode\":\"runOnceForEachItem\",\"jsCode\":\"\\nconst ctx = $('Prepare Data URI for 3D API').item.json;\\nconst slug = ctx.assetSlug;\\nconst pascal = slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');\\nconst modelPath = 'assets/models/' + slug + '.glb';\\n\\nconst componentCode = `import React, { useRef } from 'react';\\n\\n\\n\\n// Auto-generated viewer for: ${ctx.originalIdea}\\nfunction Model() {\\n  const ref = useRef(null);\\n  const { scene } = useGLTF(require('../${modelPath}'));\\n  useFrame(() => { if (ref.current) ref.current.rotation.y += 0.005; });\\n  return <primitive ref={ref} object={scene} scale={1.5} />;\\n}\\n\\nexport default function ${pascal}Viewer() {\\n  return (\\n    <View style={styles.container}>\\n      <Canvas camera={{ position: [0, 0, 4], fov: 50 }}>\\n        <ambientLight intensity={0.6} />\\n        <directionalLight position={[3, 3, 3]} intensity={1} />\\n        <Model />\\n      </Canvas>\\n    </View>\\n  );\\n}\\n\\nconst styles = StyleSheet.create({ container: { flex: 1 } });\\n`;\\n\\nreturn { json: {\\n  ...ctx,\\n  componentCode,\\n  componentFileName: pascal + 'Viewer.tsx',\\n  componentPath: 'components/generated/' + pascal + 'Viewer.tsx',\\n  modelPath\\n}, binary: $input.item.binary };\\n\"},\"id\":\"467ec54b-cff8-4897-83ea-0c01f909774a\",\"name\":\"Generate RN Viewer Component\",\"type\":\"n8n-nodes-base.code\",\"typeVersion\":2,\"position\":[2912,0]},{\"parameters\":{\"resource\":\"file\",\"operation\":\"edit\",\"owner\":\"={{ $json.githubOwner }}\",\"repository\":\"={{ $json.githubRepo }}\",\"filePath\":\"={{ $json.modelPath }}\",\"binaryData\":true,\"binaryPropertyName\":\"model\",\"commitMessage\":\"={{ \\\"feat(assets): add generated 3D asset for \\\\\\\"\\\" + $json.originalIdea + \\\"\\\\\\\"\\\" }}\"},\"id\":\"a10ed707-9e5c-414a-96d8-239aec7e3163\",\"name\":\"Commit .glb to Repo\",\"type\":\"n8n-nodes-base.github\",\"typeVersion\":1.1,\"position\":[3136,0],\"webhookId\":\"ceda7fbd-6fde-4354-9dd4-1526e8114543\"},{\"parameters\":{\"resource\":\"file\",\"operation\":\"edit\",\"owner\":\"={{ $(\\\"Generate RN Viewer Component\\\").item.json.githubOwner }}\",\"repository\":\"={{ $(\\\"Generate RN Viewer Component\\\").item.json.githubRepo }}\",\"filePath\":\"={{ $(\\\"Generate RN Viewer Component\\\").item.json.componentPath }}\",\"fileContent\":\"={{ $(\\\"Generate RN Viewer Component\\\").item.json.componentCode }}\",\"commitMessage\":\"={{ \\\"feat(ui): add generated 3D viewer component for \\\\\\\"\\\" + $(\\\"Generate RN Viewer Component\\\").item.json.originalIdea + \\\"\\\\\\\"\\\" }}\"},\"id\":\"0e2a98cd-d3a8-4168-82dd-9e4f867c9370\",\"name\":\"Commit Viewer Component to Repo\",\"type\":\"n8n-nodes-base.github\",\"typeVersion\":1.1,\"position\":[3360,0],\"webhookId\":\"3a6df730-4c87-4270-8886-d63d256ce4d7\"},{\"parameters\":{\"respondWith\":\"json\",\"responseBody\":\"={{ JSON.stringify({ status: \\\"ready\\\", requestId: $(\\\"Generate RN Viewer Component\\\").item.json.requestId, modelPath: $(\\\"Generate RN Viewer Component\\\").item.json.modelPath, componentPath: $(\\\"Generate RN Viewer Component\\\").item.json.componentPath, refinedPrompt: $(\\\"Generate RN Viewer Component\\\").item.json.refinedPrompt }) }}\",\"options\":{}},\"id\":\"6d787fba-0e35-4adb-94f4-595ecdebed88\",\"name\":\"Respond Success\",\"type\":\"n8n-nodes-base.respondToWebhook\",\"typeVersion\":1.4,\"position\":[3584,0]},{\"parameters\":{\"assignments\":{\"assignments\":[{\"id\":\"m1\",\"name\":\"message\",\"value\":\"={{ \\\"Mesh generation status: \\\" + $json.status + \\\". Increase Wait duration or add a polling loop for production use.\\\" }}\",\"type\":\"string\"}]},\"options\":{}},\"id\":\"e4ce42eb-a820-4450-a9a0-3b48205c627d\",\"name\":\"Flag Mesh Not Ready\",\"type\":\"n8n-nodes-base.set\",\"typeVersion\":3.4,\"position\":[2688,240]},{\"parameters\":{\"assignments\":{\"assignments\":[{\"id\":\"e1\",\"name\":\"error\",\"value\":true,\"type\":\"boolean\"},{\"id\":\"e2\",\"name\":\"stage\",\"value\":\"={{ $json.node ? $json.node.name : \\\"unknown\\\" }}\",\"type\":\"string\"},{\"id\":\"e3\",\"name\":\"message\",\"value\":\"={{ $json.error ? $json.error.message : ($json.message || \\\"Unknown pipeline failure\\\") }}\",\"type\":\"string\"}]},\"options\":{}},\"id\":\"b4cd2f35-65fd-4559-855a-2cf0fc59c44a\",\"name\":\"Format Pipeline Error\",\"type\":\"n8n-nodes-base.set\",\"typeVersion\":3.4,\"position\":[2912,560]},{\"parameters\":{\"respondWith\":\"json\",\"responseBody\":\"={{ JSON.stringify({ error: \\\"Missing required field: idea\\\" }) }}\",\"options\":{}},\"id\":\"1b955241-8d56-4ba8-8771-16aa229d7ff5\",\"name\":\"Respond 400\",\"type\":\"n8n-nodes-base.respondToWebhook\",\"typeVersion\":1.4,\"position\":[448,704]},{\"parameters\":{\"respondWith\":\"json\",\"responseBody\":\"={{ JSON.stringify($json) }}\",\"options\":{}},\"id\":\"083cd732-198d-4cdb-9d53-9e8c85ed8938\",\"name\":\"Respond 502 Error\",\"type\":\"n8n-nodes-base.respondToWebhook\",\"typeVersion\":1.4,\"position\":[3136,560]},{\"parameters\":{\"content\":\"## Stage 1: Prompt Refiner Agent\\nFREE OpenRouter model expands the idea into an image-gen prompt: isolated subject, plain background, studio lighting.\",\"color\":4},\"id\":\"21d87ed1-3a85-4894-bb25-328d7f2e020c\",\"name\":\"Sticky Note a402c8b4\",\"type\":\"n8n-nodes-base.stickyNote\",\"typeVersion\":1,\"position\":[1728,704]},{\"parameters\":{\"content\":\"## Stage 2: Image Generation (Gemini)\\nCalls Gemini image generation and decodes base64 into n8n binary data.\",\"color\":5},\"id\":\"99e9b7bc-90f4-4009-b1b9-db74b3ed1342\",\"name\":\"Sticky Note 803189af\",\"type\":\"n8n-nodes-base.stickyNote\",\"typeVersion\":1,\"position\":[1728,960]},{\"parameters\":{\"content\":\"## Stage 3: Crop & Isolate\\nremove.bg strips background AND auto-crops to the subject bounding box (crop=true) in one call.\",\"color\":6},\"id\":\"c746945d-a04b-42d4-8c83-4db9c3b6d1ca\",\"name\":\"Sticky Note df0fa3b5\",\"type\":\"n8n-nodes-base.stickyNote\",\"typeVersion\":1,\"position\":[1728,1216]},{\"parameters\":{\"content\":\"## Stage 4: Image-to-3D\\nMeshy's documented REST API (async job + poll). image-to-3d.ai has no public API — see chat response for a browser-automation alternative.\",\"color\":3},\"id\":\"8dff19fb-9210-4090-9b99-af590c7b5c6a\",\"name\":\"Sticky Note d28a1376\",\"type\":\"n8n-nodes-base.stickyNote\",\"typeVersion\":1,\"position\":[1728,1472]},{\"parameters\":{\"content\":\"## Stage 5: IDE Orchestrator\\nGenerates a React Native / react-three-fiber viewer component and commits both the .glb and the component straight into the mobile app repo via the GitHub API.\",\"color\":7},\"id\":\"987accfd-0519-4c65-8c95-fc058987df39\",\"name\":\"Sticky Note f7e367c7\",\"type\":\"n8n-nodes-base.stickyNote\",\"typeVersion\":1,\"position\":[1728,1728]}],\"nodeGroups\":[],\"activeVersion\":null,\"meta\":{\"aiBuilderAssisted\":true,\"builderVariant\":\"mcp\"}},\"triggerInfo\":\"This workflow has the following trigger(s):\\n\\n\\nWebhook trigger(s):\\n\\n\\n\\t\\t\\t\\t<trigger 1>\\n\\t\\t\\t\\t\\t - Node name: Idea Intake Webhook\\n\\t\\t\\t\\t\\t - Production URL: https://nseconds.app.n8n.cloud/webhook/generate-3d-asset\\n\\t\\t\\t\\t\\t - Test URL: https://nseconds.app.n8n.cloud/webhook-test/generate-3d-asset\\n\\t\\t\\t\\t\\t - HTTP Method: POST\\n\\t\\t\\t\\t\\t - Response Mode: Webhook is configured to respond using \\\"Respond to Webhook\\\" node.\\n\\t\\t\\t\\t\\t - No credentials required for this webhook.\\n\\t\\t\\t\\t</trigger 1>\\n\\nTo execute a webhook trigger, pass triggerNodeName and inputs: { triggerNodeName: \\\"<node name>\\\", inputs: { webhookData: { headers?, query?, body? } } }.\"}"
+      }
+    ],
+    "structuredContent": {
+      "workflow": {
+        "id": "v40HjsznStaPF63j",
+        "name": "Idea to 3D Asset Pipeline",
+        "active": false,
+        "isArchived": false,
+        "versionId": "fe5ec487-3b37-4e8e-b5ab-da424f0f690b",
+        "activeVersionId": null,
+        "triggerCount": 0,
+        "nodeCount": 26,
+        "createdAt": "2026-08-21T06:42:05.855Z",
+        "updatedAt": "2026-08-21T09:25:07.145Z",
+        "settings": {
+          "executionOrder": "v1",
+          "availableInMCP": true,
+          "binaryMode": "separate"
+        },
+        "tags": [],
+        "parentFolderId": null,
+        "description": "Turns a natural-language idea into a rendered 3D asset in a mobile app: OpenRouter free-model prompt refinement → Gemini image gen → remove.bg crop/isolate → Meshy image-to-3D → GitHub commit of .glb + generated RN/R3F viewer component.",
+        "scopes": [
+          "execution:reveal",
+          "workflow:create",
+          "workflow:delete",
+          "workflow:disableRedaction",
+          "workflow:enableRedaction",
+          "workflow:execute",
+          "workflow:execute-chat",
+          "workflow:export",
+          "workflow:import",
+          "workflow:list",
+          "workflow:move",
+          "workflow:publish",
+          "workflow:read",
+          "workflow:share",
+          "workflow:unpublish",
+          "workflow:unshare",
+          "workflow:update"
+        ],
+        "canExecute": true,
+        "connections": {
+          "Idea Intake Webhook": {
+            "main": [
+              [
+                {
+                  "node": "Valid Idea Provided?",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Valid Idea Provided?": {
+            "main": [
+              [
+                {
+                  "node": "Refine Prompt (OpenRouter)",
+                  "type": "main",
+                  "index": 0
+                }
+              ],
+              [
+                {
+                  "node": "Respond 400",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Refine Prompt (OpenRouter)": {
+            "main": [
+              [
+                {
+                  "node": "Extract Refined Prompt",
+                  "type": "main",
+                  "index": 0
+                }
+              ],
+              [
+                {
+                  "node": "Format Pipeline Error",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Extract Refined Prompt": {
+            "main": [
+              [
+                {
+                  "node": "Generate Image (Gemini)",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Generate Image (Gemini)": {
+            "main": [
+              [
+                {
+                  "node": "Decode Image to Binary",
+                  "type": "main",
+                  "index": 0
+                }
+              ],
+              [
+                {
+                  "node": "Format Pipeline Error",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Decode Image to Binary": {
+            "main": [
+              [
+                {
+                  "node": "Isolate & Crop Subject (remove.bg)",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Isolate & Crop Subject (remove.bg)": {
+            "main": [
+              [
+                {
+                  "node": "Prepare Data URI for 3D API",
+                  "type": "main",
+                  "index": 0
+                }
+              ],
+              [
+                {
+                  "node": "Format Pipeline Error",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Prepare Data URI for 3D API": {
+            "main": [
+              [
+                {
+                  "node": "Convert 2D→3D (Meshy Image-to-3D)",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Convert 2D→3D (Meshy Image-to-3D)": {
+            "main": [
+              [
+                {
+                  "node": "Wait for Mesh Generation",
+                  "type": "main",
+                  "index": 0
+                }
+              ],
+              [
+                {
+                  "node": "Format Pipeline Error",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Wait for Mesh Generation": {
+            "main": [
+              [
+                {
+                  "node": "Check 3D Task Status",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Check 3D Task Status": {
+            "main": [
+              [
+                {
+                  "node": "Mesh Succeeded?",
+                  "type": "main",
+                  "index": 0
+                }
+              ],
+              [
+                {
+                  "node": "Format Pipeline Error",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Mesh Succeeded?": {
+            "main": [
+              [
+                {
+                  "node": "Download .glb Model",
+                  "type": "main",
+                  "index": 0
+                }
+              ],
+              [
+                {
+                  "node": "Flag Mesh Not Ready",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Download .glb Model": {
+            "main": [
+              [
+                {
+                  "node": "Generate RN Viewer Component",
+                  "type": "main",
+                  "index": 0
+                }
+              ],
+              [
+                {
+                  "node": "Format Pipeline Error",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Generate RN Viewer Component": {
+            "main": [
+              [
+                {
+                  "node": "Commit .glb to Repo",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Commit .glb to Repo": {
+            "main": [
+              [
+                {
+                  "node": "Commit Viewer Component to Repo",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Commit Viewer Component to Repo": {
+            "main": [
+              [
+                {
+                  "node": "Respond Success",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Flag Mesh Not Ready": {
+            "main": [
+              [
+                {
+                  "node": "Format Pipeline Error",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          },
+          "Format Pipeline Error": {
+            "main": [
+              [
+                {
+                  "node": "Respond 502 Error",
+                  "type": "main",
+                  "index": 0
+                }
+              ]
+            ]
+          }
+        },
+        "nodes": [
+          {
+            "parameters": {
+              "httpMethod": "POST",
+              "path": "generate-3d-asset",
+              "responseMode": "responseNode",
+              "options": {}
+            },
+            "id": "a235ac27-2a87-4ff1-8a6b-aeae29310763",
+            "name": "Idea Intake Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+              0,
+              608
+            ],
+            "webhookId": "d5b9dd6d-6bfb-46c5-8597-733acec4d9dc"
+          },
+          {
+            "parameters": {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.idea }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "options": {}
+            },
+            "id": "fa60a6a0-bbad-4d32-beb7-ef95211328e8",
+            "name": "Valid Idea Provided?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+              224,
+              608
+            ]
+          },
+          {
+            "parameters": {
+              "method": "POST",
+              "url": "https://openrouter.ai/api/v1/chat/completions",
+              "sendHeaders": true,
+              "headerParameters": {
+                "parameters": [
+                  {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "name": "HTTP-Referer",
+                    "value": "https://your-app.example.com"
+                  },
+                  {
+                    "name": "X-Title",
+                    "value": "AI 3D Asset Pipeline"
+                  }
+                ]
+              },
+              "sendBody": true,
+              "specifyBody": "json",
+              "jsonBody": "={{ JSON.stringify({ model: \"meta-llama/llama-3.3-70b-instruct:free\", messages: [ { role: \"system\", content: \"You are an expert prompt engineer for text-to-image models. Turn the user idea into a single, highly detailed image generation prompt describing ONE isolated 3D-game-ready asset, centered, on a plain solid white or transparent background, studio lighting, front-facing orthographic-friendly view, no shadows on ground, no extra objects, no text or watermarks, high detail suitable for photogrammetry/image-to-3D conversion. Respond with ONLY the final prompt text, nothing else.\" }, { role: \"user\", content: $json.body.idea } ], temperature: 0.7 }) }}",
+              "options": {
+                "timeout": 30000
+              }
+            },
+            "id": "f092d271-eadd-438f-8f78-22aca9c4fc94",
+            "name": "Refine Prompt (OpenRouter)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.4,
+            "position": [
+              448,
+              512
+            ],
+            "retryOnFail": true,
+            "maxTries": 3,
+            "onError": "continueErrorOutput"
+          },
+          {
+            "parameters": {
+              "mode": "runOnceForEachItem",
+              "jsCode": "\nconst choice = $input.item.json.choices && $input.item.json.choices[0];\nif (!choice || !choice.message || !choice.message.content) {\n  throw new Error('OpenRouter did not return a usable completion: ' + JSON.stringify($input.item.json));\n}\nconst requestBody = $('Idea Intake Webhook').item.json.body;\nreturn { json: {\n  refinedPrompt: choice.message.content.trim(),\n  originalIdea: requestBody.idea,\n  requestId: requestBody.requestId || (Date.now() + '-' + Math.random().toString(36).slice(2)),\n  githubOwner: requestBody.githubOwner,\n  githubRepo: requestBody.githubRepo,\n  githubBranch: requestBody.githubBranch || 'main',\n  assetSlug: (requestBody.idea || 'asset').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40) || 'asset'\n} };\n"
+            },
+            "id": "33028b7c-402f-4b38-8765-1d0fc4498044",
+            "name": "Extract Refined Prompt",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+              672,
+              432
+            ]
+          },
+          {
+            "parameters": {
+              "method": "POST",
+              "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
+              "sendHeaders": true,
+              "headerParameters": {
+                "parameters": [
+                  {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                  }
+                ]
+              },
+              "sendBody": true,
+              "specifyBody": "json",
+              "jsonBody": "={{ JSON.stringify({ contents: [ { parts: [ { text: $json.refinedPrompt } ] } ], generationConfig: { responseModalities: [\"IMAGE\"] } }) }}",
+              "options": {
+                "timeout": 60000
+              }
+            },
+            "id": "eaebe398-7dc1-484c-bd09-79e8ff487827",
+            "name": "Generate Image (Gemini)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.4,
+            "position": [
+              896,
+              432
+            ],
+            "retryOnFail": true,
+            "maxTries": 3,
+            "onError": "continueErrorOutput"
+          },
+          {
+            "parameters": {
+              "mode": "runOnceForEachItem",
+              "jsCode": "\nconst candidate = $input.item.json.candidates && $input.item.json.candidates[0];\nconst part = candidate && candidate.content && candidate.content.parts && candidate.content.parts.find(p => p.inlineData);\nif (!part) {\n  throw new Error('Gemini response did not contain image data: ' + JSON.stringify($input.item.json).slice(0, 500));\n}\nconst b64 = part.inlineData.data;\nconst mime = part.inlineData.mimeType || 'image/png';\nconst buffer = Buffer.from(b64, 'base64');\nconst binary = await this.helpers.prepareBinaryData(buffer, 'raw_asset.png', mime);\nreturn { json: $input.item.json, binary: { data: binary } };\n"
+            },
+            "id": "8cacbb50-5ba6-49dd-b470-fb5e2a688c41",
+            "name": "Decode Image to Binary",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+              1120,
+              368
+            ]
+          },
+          {
+            "parameters": {
+              "method": "POST",
+              "url": "https://api.remove.bg/v1.0/removebg",
+              "sendHeaders": true,
+              "headerParameters": {
+                "parameters": [
+                  {}
+                ]
+              },
+              "sendBody": true,
+              "contentType": "multipart-form-data",
+              "bodyParameters": {
+                "parameters": [
+                  {
+                    "parameterType": "formBinaryData",
+                    "name": "image_file",
+                    "inputDataFieldName": "data"
+                  },
+                  {
+                    "name": "size",
+                    "value": "auto"
+                  },
+                  {
+                    "name": "crop",
+                    "value": "true"
+                  },
+                  {
+                    "name": "crop_margin",
+                    "value": "5%"
+                  },
+                  {
+                    "name": "format",
+                    "value": "png"
+                  }
+                ]
+              },
+              "options": {
+                "response": {
+                  "response": {
+                    "responseFormat": "file"
+                  }
+                },
+                "timeout": 60000
+              }
+            },
+            "id": "617a8905-c9a2-46d7-b20f-fa018e44791b",
+            "name": "Isolate & Crop Subject (remove.bg)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.4,
+            "position": [
+              1344,
+              368
+            ],
+            "retryOnFail": true,
+            "maxTries": 2,
+            "onError": "continueErrorOutput"
+          },
+          {
+            "parameters": {
+              "mode": "runOnceForEachItem",
+              "jsCode": "\nconst binary = $input.item.binary.data;\nconst buffer = await this.helpers.getBinaryDataBuffer(0, 'data');\nconst dataUri = 'data:' + binary.mimeType + ';base64,' + buffer.toString('base64');\nreturn { json: { ...$('Extract Refined Prompt').item.json, imageDataUri: dataUri }, binary: $input.item.binary };\n"
+            },
+            "id": "d5d2cfd2-994e-4412-a868-d75ed577774d",
+            "name": "Prepare Data URI for 3D API",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+              1568,
+              288
+            ]
+          },
+          {
+            "parameters": {
+              "method": "POST",
+              "url": "https://api.meshy.ai/openapi/v1/image-to-3d",
+              "sendHeaders": true,
+              "headerParameters": {
+                "parameters": [
+                  {
+                    "name": "Content-Type",
+                    "value": "application/json"
+                  }
+                ]
+              },
+              "sendBody": true,
+              "specifyBody": "json",
+              "jsonBody": "={{ JSON.stringify({ image_url: $json.imageDataUri, enable_pbr: true, should_remesh: true, ai_model: \"meshy-5\" }) }}",
+              "options": {
+                "timeout": 60000
+              }
+            },
+            "id": "cef3fd05-4e4b-4539-947f-c82dcf725b18",
+            "name": "Convert 2D→3D (Meshy Image-to-3D)",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.4,
+            "position": [
+              1792,
+              288
+            ],
+            "retryOnFail": true,
+            "maxTries": 2,
+            "onError": "continueErrorOutput"
+          },
+          {
+            "parameters": {
+              "amount": 25
+            },
+            "id": "a0c46035-34b5-4327-8caf-e952ce3a44ac",
+            "name": "Wait for Mesh Generation",
+            "type": "n8n-nodes-base.wait",
+            "typeVersion": 1.1,
+            "position": [
+              2016,
+              224
+            ],
+            "webhookId": "0e0284ba-0f3c-4755-85b8-6e0dd8b1b53f"
+          },
+          {
+            "parameters": {
+              "url": "={{ \"https://api.meshy.ai/openapi/v1/image-to-3d/\" + $(\"Convert 2D→3D (Meshy Image-to-3D)\").item.json.result }}",
+              "sendHeaders": true,
+              "headerParameters": {
+                "parameters": [
+                  {}
+                ]
+              },
+              "options": {
+                "timeout": 30000
+              }
+            },
+            "id": "cdea0800-4f8a-4def-a1ae-62cc7facc766",
+            "name": "Check 3D Task Status",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.4,
+            "position": [
+              2240,
+              224
+            ],
+            "retryOnFail": true,
+            "maxTries": 3,
+            "onError": "continueErrorOutput"
+          },
+          {
+            "parameters": {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 1
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "rightValue": "SUCCEEDED"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "options": {}
+            },
+            "id": "86fdf9b0-171f-4f92-85e0-99313d399bf2",
+            "name": "Mesh Succeeded?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+              2464,
+              144
+            ]
+          },
+          {
+            "parameters": {
+              "url": "={{ $json.model_urls.glb }}",
+              "options": {
+                "response": {
+                  "response": {
+                    "responseFormat": "file"
+                  }
+                },
+                "timeout": 60000
+              }
+            },
+            "id": "b83fa186-e2ca-4024-81b1-f32fbb8f8aa7",
+            "name": "Download .glb Model",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.4,
+            "position": [
+              2688,
+              48
+            ],
+            "retryOnFail": true,
+            "maxTries": 3,
+            "onError": "continueErrorOutput"
+          },
+          {
+            "parameters": {
+              "mode": "runOnceForEachItem",
+              "jsCode": "\nconst ctx = $('Prepare Data URI for 3D API').item.json;\nconst slug = ctx.assetSlug;\nconst pascal = slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');\nconst modelPath = 'assets/models/' + slug + '.glb';\n\nconst componentCode = `import React, { useRef } from 'react';\n\n\n\n// Auto-generated viewer for: ${ctx.originalIdea}\nfunction Model() {\n  const ref = useRef(null);\n  const { scene } = useGLTF(require('../${modelPath}'));\n  useFrame(() => { if (ref.current) ref.current.rotation.y += 0.005; });\n  return <primitive ref={ref} object={scene} scale={1.5} />;\n}\n\nexport default function ${pascal}Viewer() {\n  return (\n    <View style={styles.container}>\n      <Canvas camera={{ position: [0, 0, 4], fov: 50 }}>\n        <ambientLight intensity={0.6} />\n        <directionalLight position={[3, 3, 3]} intensity={1} />\n        <Model />\n      </Canvas>\n    </View>\n  );\n}\n\nconst styles = StyleSheet.create({ container: { flex: 1 } });\n`;\n\nreturn { json: {\n  ...ctx,\n  componentCode,\n  componentFileName: pascal + 'Viewer.tsx',\n  componentPath: 'components/generated/' + pascal + 'Viewer.tsx',\n  modelPath\n}, binary: $input.item.binary };\n"
+            },
+            "id": "467ec54b-cff8-4897-83ea-0c01f909774a",
+            "name": "Generate RN Viewer Component",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+              2912,
+              0
+            ]
+          },
+          {
+            "parameters": {
+              "resource": "file",
+              "operation": "edit",
+              "owner": "={{ $json.githubOwner }}",
+              "repository": "={{ $json.githubRepo }}",
+              "filePath": "={{ $json.modelPath }}",
+              "binaryData": true,
+              "binaryPropertyName": "model",
+              "commitMessage": "={{ \"feat(assets): add generated 3D asset for \\\"\" + $json.originalIdea + \"\\\"\" }}"
+            },
+            "id": "a10ed707-9e5c-414a-96d8-239aec7e3163",
+            "name": "Commit .glb to Repo",
+            "type": "n8n-nodes-base.github",
+            "typeVersion": 1.1,
+            "position": [
+              3136,
+              0
+            ],
+            "webhookId": "ceda7fbd-6fde-4354-9dd4-1526e8114543"
+          },
+          {
+            "parameters": {
+              "resource": "file",
+              "operation": "edit",
+              "owner": "={{ $(\"Generate RN Viewer Component\").item.json.githubOwner }}",
+              "repository": "={{ $(\"Generate RN Viewer Component\").item.json.githubRepo }}",
+              "filePath": "={{ $(\"Generate RN Viewer Component\").item.json.componentPath }}",
+              "fileContent": "={{ $(\"Generate RN Viewer Component\").item.json.componentCode }}",
+              "commitMessage": "={{ \"feat(ui): add generated 3D viewer component for \\\"\" + $(\"Generate RN Viewer Component\").item.json.originalIdea + \"\\\"\" }}"
+            },
+            "id": "0e2a98cd-d3a8-4168-82dd-9e4f867c9370",
+            "name": "Commit Viewer Component to Repo",
+            "type": "n8n-nodes-base.github",
+            "typeVersion": 1.1,
+            "position": [
+              3360,
+              0
+            ],
+            "webhookId": "3a6df730-4c87-4270-8886-d63d256ce4d7"
+          },
+          {
+            "parameters": {
+              "respondWith": "json",
+              "responseBody": "={{ JSON.stringify({ status: \"ready\", requestId: $(\"Generate RN Viewer Component\").item.json.requestId, modelPath: $(\"Generate RN Viewer Component\").item.json.modelPath, componentPath: $(\"Generate RN Viewer Component\").item.json.componentPath, refinedPrompt: $(\"Generate RN Viewer Component\").item.json.refinedPrompt }) }}",
+              "options": {}
+            },
+            "id": "6d787fba-0e35-4adb-94f4-595ecdebed88",
+            "name": "Respond Success",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.4,
+            "position": [
+              3584,
+              0
+            ]
+          },
+          {
+            "parameters": {
+              "assignments": {
+                "assignments": [
+                  {
+                    "id": "m1",
+                    "name": "message",
+                    "value": "={{ \"Mesh generation status: \" + $json.status + \". Increase Wait duration or add a polling loop for production use.\" }}",
+                    "type": "string"
+                  }
+                ]
+              },
+              "options": {}
+            },
+            "id": "e4ce42eb-a820-4450-a9a0-3b48205c627d",
+            "name": "Flag Mesh Not Ready",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+              2688,
+              240
+            ]
+          },
+          {
+            "parameters": {
+              "assignments": {
+                "assignments": [
+                  {
+                    "id": "e1",
+                    "name": "error",
+                    "value": true,
+                    "type": "boolean"
+                  },
+                  {
+                    "id": "e2",
+                    "name": "stage",
+                    "value": "={{ $json.node ? $json.node.name : \"unknown\" }}",
+                    "type": "string"
+                  },
+                  {
+                    "id": "e3",
+                    "name": "message",
+                    "value": "={{ $json.error ? $json.error.message : ($json.message || \"Unknown pipeline failure\") }}",
+                    "type": "string"
+                  }
+                ]
+              },
+              "options": {}
+            },
+            "id": "b4cd2f35-65fd-4559-855a-2cf0fc59c44a",
+            "name": "Format Pipeline Error",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+              2912,
+              560
+            ]
+          },
+          {
+            "parameters": {
+              "respondWith": "json",
+              "responseBody": "={{ JSON.stringify({ error: \"Missing required field: idea\" }) }}",
+              "options": {}
+            },
+            "id": "1b955241-8d56-4ba8-8771-16aa229d7ff5",
+            "name": "Respond 400",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.4,
+            "position": [
+              448,
+              704
+            ]
+          },
+          {
+            "parameters": {
+              "respondWith": "json",
+              "responseBody": "={{ JSON.stringify($json) }}",
+              "options": {}
+            },
+            "id": "083cd732-198d-4cdb-9d53-9e8c85ed8938",
+            "name": "Respond 502 Error",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.4,
+            "position": [
+              3136,
+              560
+            ]
+          },
+          {
+            "parameters": {
+              "content": "## Stage 1: Prompt Refiner Agent\nFREE OpenRouter model expands the idea into an image-gen prompt: isolated subject, plain background, studio lighting.",
+              "color": 4
+            },
+            "id": "21d87ed1-3a85-4894-bb25-328d7f2e020c",
+            "name": "Sticky Note a402c8b4",
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+              1728,
+              704
+            ]
+          },
+          {
+            "parameters": {
+              "content": "## Stage 2: Image Generation (Gemini)\nCalls Gemini image generation and decodes base64 into n8n binary data.",
+              "color": 5
+            },
+            "id": "99e9b7bc-90f4-4009-b1b9-db74b3ed1342",
+            "name": "Sticky Note 803189af",
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+              1728,
+              960
+            ]
+          },
+          {
+            "parameters": {
+              "content": "## Stage 3: Crop & Isolate\nremove.bg strips background AND auto-crops to the subject bounding box (crop=true) in one call.",
+              "color": 6
+            },
+            "id": "c746945d-a04b-42d4-8c83-4db9c3b6d1ca",
+            "name": "Sticky Note df0fa3b5",
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+              1728,
+              1216
+            ]
+          },
+          {
+            "parameters": {
+              "content": "## Stage 4: Image-to-3D\nMeshy's documented REST API (async job + poll). image-to-3d.ai has no public API — see chat response for a browser-automation alternative.",
+              "color": 3
+            },
+            "id": "8dff19fb-9210-4090-9b99-af590c7b5c6a",
+            "name": "Sticky Note d28a1376",
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+              1728,
+              1472
+            ]
+          },
+          {
+            "parameters": {
+              "content": "## Stage 5: IDE Orchestrator\nGenerates a React Native / react-three-fiber viewer component and commits both the .glb and the component straight into the mobile app repo via the GitHub API.",
+              "color": 7
+            },
+            "id": "987accfd-0519-4c65-8c95-fc058987df39",
+            "name": "Sticky Note f7e367c7",
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+              1728,
+              1728
+            ]
+          }
+        ],
+        "nodeGroups": [],
+        "activeVersion": null,
+        "meta": {
+          "aiBuilderAssisted": true,
+          "builderVariant": "mcp"
+        }
+      },
+      "triggerInfo": "This workflow has the following trigger(s):\n\n\nWebhook trigger(s):\n\n\n\t\t\t\t<trigger 1>\n\t\t\t\t\t - Node name: Idea Intake Webhook\n\t\t\t\t\t - Production URL: https://nseconds.app.n8n.cloud/webhook/generate-3d-asset\n\t\t\t\t\t - Test URL: https://nseconds.app.n8n.cloud/webhook-test/generate-3d-asset\n\t\t\t\t\t - HTTP Method: POST\n\t\t\t\t\t - Response Mode: Webhook is configured to respond using \"Respond to Webhook\" node.\n\t\t\t\t\t - No credentials required for this webhook.\n\t\t\t\t</trigger 1>\n\nTo execute a webhook trigger, pass triggerNodeName and inputs: { triggerNodeName: \"<node name>\", inputs: { webhookData: { headers?, query?, body? } } }."
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 5
+}

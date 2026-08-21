@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: 3d-postgres
+    environment:
+      - POSTGRES_USER=n8n
+      - POSTGRES_PASSWORD=n8n
+      - POSTGRES_DB=n8n
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U n8n"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: 3d-minio
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: 3d-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set localminio http://minio:9000 minioadmin minioadmin;
+      /usr/bin/mc mb -p localminio/assets;
+      /usr/bin/mc anonymous set public localminio/assets;
+      echo 'MinIO bucket initialized successfully';
+      exit 0;
+      "
+
+  3d-asset-processor:
+    build:
+      context: ./asset-processor
+      dockerfile: Dockerfile
+    container_name: 3d-asset-processor
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - REMBG_MODEL=u2net_thin
+    restart: unless-stopped
+
+  3d-automation-service:
+    build:
+      context: ./automation-service
+      dockerfile: Dockerfile
+    container_name: 3d-automation-service
+    ports:
+      - "10000:10000"
+    environment:
+      - PORT=10000
+    restart: unless-stopped
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: 3d-n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n
+      - DB_POSTGRESDB_USER=n8n
+      - DB_POSTGRESDB_PASSWORD=n8n
+      - N8N_ENCRYPTION_KEY=3d-generator-secret-key-12345
+      - STORAGE_BUCKET=assets
+      - S3_PUBLIC_URL=http://localhost:9000/assets
+      # AWS S3-compatible configuration for MinIO
+      - AWS_ACCESS_KEY_ID=minioadmin
+      - AWS_SECRET_ACCESS_KEY=minioadmin
+      - AWS_DEFAULT_REGION=us-east-1
+      # Insert your real API keys below to run Gemini & OpenRouter
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: 3d-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # n8n webhook URL within the docker network
+      - NEXT_PUBLIC_N8N_WEBHOOK_URL=http://localhost:5678/webhook/generate-3d-asset
+    depends_on:
+      - n8n
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  minio_data:

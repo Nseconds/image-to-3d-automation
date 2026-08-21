@@ -1,0 +1,28 @@
+{
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"valid\": true,\n  \"nodeCount\": 30,\n  \"warnings\": [\n    {\n      \"code\": \"INVALID_PARAMETER\",\n      \"message\": \"Node \\\"13 - Wait For 3D\\\": Required field \\\"parameters.dateTime\\\" is missing. Expected string.\",\n      \"nodeName\": \"13 - Wait For 3D\"\n    },\n    {\n      \"code\": \"INVALID_PARAMETER\",\n      \"message\": \"Node \\\"13 - Wait For 3D\\\": Required field \\\"parameters.formTitle\\\" is missing. Expected string.\",\n      \"nodeName\": \"13 - Wait For 3D\"\n    }\n  ]\n}"
+      }
+    ],
+    "structuredContent": {
+      "valid": true,
+      "nodeCount": 30,
+      "warnings": [
+        {
+          "code": "INVALID_PARAMETER",
+          "message": "Node \"13 - Wait For 3D\": Required field \"parameters.dateTime\" is missing. Expected string.",
+          "nodeName": "13 - Wait For 3D"
+        },
+        {
+          "code": "INVALID_PARAMETER",
+          "message": "Node \"13 - Wait For 3D\": Required field \"parameters.formTitle\" is missing. Expected string.",
+          "nodeName": "13 - Wait For 3D"
+        }
+      ]
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 9
+}

@@ -1,0 +1,28 @@
+{
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\"data\":[{\"id\":\"v40HjsznStaPF63j\",\"name\":\"Idea to 3D Asset Pipeline\",\"description\":\"Turns a natural-language idea into a rendered 3D asset in a mobile app: OpenRouter free-model prompt refinement → Gemini image gen → remove.bg crop/isolate → Meshy image-to-3D → GitHub commit of .glb + generated RN/R3F viewer component.\",\"active\":false,\"createdAt\":\"2026-08-21T06:42:05.855Z\",\"updatedAt\":\"2026-08-21T09:25:07.145Z\",\"triggerCount\":0,\"availableInMCP\":true,\"tags\":[]}],\"count\":1}"
+      }
+    ],
+    "structuredContent": {
+      "data": [
+        {
+          "id": "v40HjsznStaPF63j",
+          "name": "Idea to 3D Asset Pipeline",
+          "description": "Turns a natural-language idea into a rendered 3D asset in a mobile app: OpenRouter free-model prompt refinement → Gemini image gen → remove.bg crop/isolate → Meshy image-to-3D → GitHub commit of .glb + generated RN/R3F viewer component.",
+          "active": false,
+          "createdAt": "2026-08-21T06:42:05.855Z",
+          "updatedAt": "2026-08-21T09:25:07.145Z",
+          "triggerCount": 0,
+          "availableInMCP": true,
+          "tags": []
+        }
+      ],
+      "count": 1
+    }
+  },
+  "jsonrpc": "2.0",
+  "id": 4
+}

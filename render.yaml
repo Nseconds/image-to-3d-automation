@@ -1,0 +1,91 @@
+services:
+  # 1. FastAPI Asset Processor (using lightweight u2net_thin for memory limits)
+  - type: web
+    name: 3d-asset-processor
+    env: docker
+    dockerContext: asset-processor
+    dockerfilePath: Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: REMBG_MODEL
+        value: u2net_thin
+
+  # 2. n8n Workflow Server
+  - type: web
+    name: 3d-n8n-server
+    env: docker
+    dockerImage: docker.n8n.io/n8nio/n8n:latest
+    plan: free
+    envVars:
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_HOST
+        fromDatabase:
+          name: 3d-postgres-db
+          property: host
+      - key: DB_POSTGRESDB_PORT
+        fromDatabase:
+          name: 3d-postgres-db
+          property: port
+      - key: DB_POSTGRESDB_DATABASE
+        fromDatabase:
+          name: 3d-postgres-db
+          property: database
+      - key: DB_POSTGRESDB_USER
+        fromDatabase:
+          name: 3d-postgres-db
+          property: user
+      - key: DB_POSTGRESDB_PASSWORD
+        fromDatabase:
+          name: 3d-postgres-db
+          property: password
+      - key: N8N_ENCRYPTION_KEY
+        generateValue: true
+      # API Keys & S3 credentials are set via Render Dashboard on deploy
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: STORAGE_BUCKET
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_DEFAULT_REGION
+        value: us-east-1
+      - key: S3_PUBLIC_URL
+        sync: false
+
+  # 3. Next.js Frontend
+  - type: web
+    name: 3d-asset-frontend
+    env: docker
+    dockerContext: frontend
+    dockerfilePath: Dockerfile
+    plan: free
+    envVars:
+      # Inject the deployed n8n webhook URL
+      - key: NEXT_PUBLIC_N8N_WEBHOOK_URL
+        fromService:
+          type: web
+          name: 3d-n8n-server
+          property: url
+        # Note: the actual webhook path /webhook/generate-3d-asset is appended in the React code.
+
+  # 4. Puppeteer Automation Service (image-to-3d.ai crawler)
+  - type: web
+    name: 3d-automation-service
+    env: docker
+    dockerContext: automation-service
+    dockerfilePath: Dockerfile
+    plan: free
+    envVars:
+      - key: PORT
+        value: 10000
+
+databases:
+  - name: 3d-postgres-db
+    plan: free

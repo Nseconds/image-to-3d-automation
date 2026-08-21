@@ -1,0 +1,659 @@
+{
+  "name": "AI Text-to-3D Asset Preparation Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-3d-asset",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a235ac27-2a87-4ff1-8a6b-aeae29310763",
+      "name": "Idea Intake Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body.idea }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "fa60a6a0-bbad-4d32-beb7-ef95211328e8",
+      "name": "Valid Idea Provided?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"error\": \"Missing required field: idea\"}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "1b955241-8d56-4ba8-8771-16aa229d7ff5",
+      "name": "Respond 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        200,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OPENROUTER_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: \"meta-llama/llama-3.3-70b-instruct:free\", messages: [ { role: \"system\", content: \"You are an expert prompt engineer for text-to-image models. Turn the user idea into a single, highly detailed image generation prompt describing ONE isolated 3D-game-ready asset, centered, on a plain solid white or transparent background, studio lighting, front-facing orthographic-friendly view, no shadows on ground, no extra objects, no text or watermarks, high detail suitable for photogrammetry/image-to-3D conversion. Respond with ONLY the final prompt text, nothing else.\" }, { role: \"user\", content: $json.body.idea } ], temperature: 0.7 }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "f092d271-eadd-438f-8f78-22aca9c4fc94",
+      "name": "Refine Prompt (OpenRouter)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        400,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst choice = $input.item.json.choices && $input.item.json.choices[0];\nif (!choice || !choice.message || !choice.message.content) {\n  throw new Error('OpenRouter did not return a usable completion: ' + JSON.stringify($input.item.json));\n}\nconst requestBody = $('Idea Intake Webhook').item.json.body;\nreturn { json: {\n  refinedPrompt: choice.message.content.trim(),\n  originalIdea: requestBody.idea,\n  requestId: requestBody.requestId || (Date.now() + '-' + Math.random().toString(36).slice(2)),\n  assetSlug: (requestBody.idea || 'asset').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40) || 'asset'\n} };\n"
+      },
+      "id": "33028b7c-402f-4b38-8765-1d0fc4498044",
+      "name": "Extract Refined Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [ { parts: [ { text: $json.refinedPrompt } ] } ], generationConfig: { responseModalities: [\"IMAGE\"] } }) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "eaebe398-7dc1-484c-bd09-79e8ff487827",
+      "name": "Generate Image (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        800,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst candidate = $input.item.json.candidates && $input.item.json.candidates[0];\nconst part = candidate && candidate.content && candidate.content.parts && candidate.content.parts.find(p => p.inlineData);\nif (!part) {\n  throw new Error('Gemini response did not contain image data: ' + JSON.stringify($input.item.json).slice(0, 500));\n}\nconst b64 = part.inlineData.data;\nconst mime = part.inlineData.mimeType || 'image/png';\nconst buffer = Buffer.from(b64, 'base64');\nconst binary = await this.helpers.prepareBinaryData(buffer, 'raw_asset.png', mime);\nreturn { json: $input.item.json, binary: { data: binary } };\n"
+      },
+      "id": "8cacbb50-5ba6-49dd-b470-fb5e2a688c41",
+      "name": "Decode Image to Binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://3d-asset-processor:8000/process",
+        "sendHeaders": false,
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "image",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "padding_margin",
+              "value": "0.05"
+            },
+            {
+              "name": "max_dimension",
+              "value": "1024"
+            },
+            {
+              "name": "remove_bg",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "617a8905-c9a2-46d7-b20f-fa018e44791b",
+      "name": "Process Asset (FastAPI)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1200,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://3d-automation-service:10000/convert",
+        "sendHeaders": false,
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "image",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          },
+          "timeout": 180000
+        }
+      },
+      "id": "717b8905-c9a2-46d7-b20f-fa018e44791b",
+      "name": "Convert 2D→3D (Puppeteer)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1400,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "supplyData",
+        "jsCode": "\n// Fetch binary buffers from previous stages\nconst rawBuffer = await this.helpers.getBinaryDataBuffer(0, 'data', 'Decode Image to Binary');\nconst processedBuffer = await this.helpers.getBinaryDataBuffer(0, 'data', 'Process Asset (FastAPI)');\nconst glbBuffer = await this.helpers.getBinaryDataBuffer(0, 'data', 'Convert 2D→3D (Puppeteer)');\n\n// Package them into 3 distinct items for S3/tmpfiles upload iteration\nreturn [\n  {\n    json: { type: 'raw', ext: 'png', mime: 'image/png' },\n    binary: { data: await this.helpers.prepareBinaryData(rawBuffer, 'raw.png', 'image/png') }\n  },\n  {\n    json: { type: 'processed', ext: 'png', mime: 'image/png' },\n    binary: { data: await this.helpers.prepareBinaryData(processedBuffer, 'processed.png', 'image/png') }\n  },\n  {\n    json: { type: 'glb', ext: 'glb', mime: 'model/gltf-binary' },\n    binary: { data: await this.helpers.prepareBinaryData(glbBuffer, 'model.glb', 'model/gltf-binary') }\n  }\n];\n"
+      },
+      "id": "c1787d15-992e-4b68-8ec1-9fbc741270fe",
+      "name": "Prepare Files for Upload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $env.AWS_ACCESS_KEY_ID }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e2a0cd70-bbad-4d32-beb7-ef95211328e8",
+      "name": "Storage Setting?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1800,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "bucketName": "={{ $env.STORAGE_BUCKET || 'assets' }}",
+        "fileName": "=public/{{ $('Extract Refined Prompt').item.json.requestId }}/{{ $json.type }}.{{ $json.ext }}",
+        "binaryData": true,
+        "binaryPropertyName": "data",
+        "additionalFields": {
+          "acl": "publicRead"
+        }
+      },
+      "id": "s30ed707-9e5c-414a-96d8-239aec7e3163",
+      "name": "Upload to S3",
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        2050,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://tmpfiles.org/api/v1/upload",
+        "sendHeaders": false,
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 45000
+        }
+      },
+      "id": "tmp7a8905-c9a2-46d7-b20f-fa018e44791b",
+      "name": "Upload to tmpfiles",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        2050,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\n// Store custom type flag to retrieve during aggregation\nreturn { json: { ...$json, type: $('Prepare Files for Upload').item.json.type } };\n"
+      },
+      "id": "e27a8905-c9a2-46d7-b20f-fa018e44791c",
+      "name": "Pass Metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2250,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "supplyData",
+        "jsCode": "\nconst items = $input.all();\nconst urls = {};\n\nfor (const item of items) {\n  const type = item.json.type;\n  let url = \"\";\n  \n  if (item.json.data && item.json.data.url) {\n    // tmpfiles.org returns view links. Convert to direct downloads by appending /dl/\n    url = item.json.data.url.replace(\"tmpfiles.org/\", \"tmpfiles.org/dl/\");\n  } else {\n    // Build S3 direct url fallback\n    const reqId = $('Extract Refined Prompt').item.json.requestId;\n    const ext = type === 'glb' ? 'glb' : 'png';\n    const s3Public = $env.S3_PUBLIC_URL || 'http://localhost:9000/assets';\n    url = `${s3Public}/public/${reqId}/${type}.${ext}`;\n  }\n  urls[type + \"Url\"] = url;\n}\n\nconst promptInfo = $('Extract Refined Prompt').item.json;\nreturn {\n  json: {\n    status: \"success\",\n    requestId: promptInfo.requestId,\n    originalIdea: promptInfo.originalIdea,\n    refinedPrompt: promptInfo.refinedPrompt,\n    ...urls\n  }\n};\n"
+      },
+      "id": "agg7d15-992e-4b68-8ec1-9fbc741270fe",
+      "name": "Aggregate Uploads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2450,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "6d787fba-0e35-4adb-94f4-595ecdebed88",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2650,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1",
+              "name": "error",
+              "value": true,
+              "type": "boolean"
+            },
+            {
+              "id": "e2",
+              "name": "stage",
+              "value": "={{ $json.node ? $json.node.name : \"unknown\" }}",
+              "type": "string"
+            },
+            {
+              "id": "e3",
+              "name": "message",
+              "value": "={{ $json.error ? $json.error.message : ($json.message || \"Unknown pipeline failure\") }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b4cd2f35-65fd-4559-855a-2cf0fc59c44a",
+      "name": "Format Pipeline Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1600,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 502
+        }
+      },
+      "id": "083cd732-198d-4cdb-9d53-9e8c85ed8938",
+      "name": "Respond 502 Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1800,
+        450
+      ]
+    }
+  ],
+  "connections": {
+    "Idea Intake Webhook": {
+      "main": [
+        [
+          {
+            "node": "Valid Idea Provided?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Valid Idea Provided?": {
+      "main": [
+        [
+          {
+            "node": "Refine Prompt (OpenRouter)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refine Prompt (OpenRouter)": {
+      "main": [
+        [
+          {
+            "node": "Extract Refined Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Pipeline Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Refined Prompt": {
+      "main": [
+        [
+          {
+            "node": "Generate Image (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Decode Image to Binary",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Pipeline Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode Image to Binary": {
+      "main": [
+        [
+          {
+            "node": "Process Asset (FastAPI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Asset (FastAPI)": {
+      "main": [
+        [
+          {
+            "node": "Convert 2D→3D (Puppeteer)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Pipeline Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert 2D→3D (Puppeteer)": {
+      "main": [
+        [
+          {
+            "node": "Prepare Files for Upload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Pipeline Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Files for Upload": {
+      "main": [
+        [
+          {
+            "node": "Storage Setting?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Storage Setting?": {
+      "main": [
+        [
+          {
+            "node": "Upload to S3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upload to tmpfiles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to S3": {
+      "main": [
+        [
+          {
+            "node": "Pass Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to tmpfiles": {
+      "main": [
+        [
+          {
+            "node": "Pass Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pass Metadata": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Uploads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Uploads": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Pipeline Error": {
+      "main": [
+        [
+          {
+            "node": "Respond 502 Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  }
+}
