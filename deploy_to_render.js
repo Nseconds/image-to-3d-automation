@@ -139,15 +139,13 @@ async function createWebService(name, context, dockerfile, envVars = []) {
     repo: repoUrl,
     branch: branchName,
     serviceDetails: {
-      webServiceDetailsPOST: {
-        runtime: "docker",
-        dockerContext: context,
-        dockerfilePath: `${context}/${dockerfile}`,
-        plan: "free",
-        region: "oregon",
-        envVars
-      }
-    }
+      env: "docker",
+      dockerContext: context,
+      dockerfilePath: `${context}/${dockerfile}`,
+      plan: "free",
+      region: "oregon"
+    },
+    envVars
   };
   
   const res = await request("https://api.render.com/v1/services", "POST", payload);
@@ -175,12 +173,11 @@ async function createImageWebService(name, imagePath, envVars = []) {
       imagePath
     },
     serviceDetails: {
-      webServiceDetailsPOST: {
-        plan: "free",
-        region: "oregon",
-        envVars
-      }
-    }
+      env: "image",
+      plan: "free",
+      region: "oregon"
+    },
+    envVars
   };
   
   const res = await request("https://api.render.com/v1/services", "POST", payload);
